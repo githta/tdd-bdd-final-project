@@ -32,6 +32,7 @@ from service import app
 from service.common import status
 from service.models import db, init_db, Product
 from tests.factories import ProductFactory
+from urllib.parse import quote_plus
 
 # Disable all but critical errors during normal test run
 # uncomment for debugging failing tests
@@ -191,3 +192,94 @@ class TestProductRoutes(TestCase):
         """It should not get 1 product width id not found"""
         response = self.client.get(f"{BASE_URL}/0")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_update_product(self):
+        """It should update an existing Product"""
+        test_product = self._create_products(1)[0]
+        resGetById = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(resGetById.status_code, status.HTTP_200_OK)
+        dataGetById = resGetById.get_json()
+        dataGetById["description"] = "VietNam"
+        resUpdate = self.client.put(f"{BASE_URL}/{dataGetById['id']}", json=dataGetById)
+        self.assertEqual(resUpdate.status_code, status.HTTP_200_OK)
+        dataUpdate = resUpdate.get_json()
+        self.assertEqual(dataUpdate["description"], "VietNam")
+    
+    def test_update_product_not_found(self):
+        """It should not update product width id not found"""
+        test_product = self._create_products(1)[0]
+        resGetById = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(resGetById.status_code, status.HTTP_200_OK)
+        dataGetById = resGetById.get_json()
+        dataGetById["description"] = "VietNam"
+        resUpdate = self.client.put(f"{BASE_URL}/0", json=dataGetById)
+        self.assertEqual(resUpdate.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_product(self):
+        """It should delete product"""
+        products = self._create_products(5)
+        product_count = self.get_product_count()
+        test_product = products[0]
+        response = self.client.delete(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(len(response.data), 0)
+        response = self.client.get(f"{BASE_URL}/{test_product.id}")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        new_count = self.get_product_count()
+        self.assertEqual(new_count, product_count - 1)
+
+    def test_delete_product_not_found(self):
+        """It should not delete product if not found product"""
+        resDelete = self.client.delete(f"{BASE_URL}/0")
+        self.assertEqual(resDelete.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_get_product_list(self):
+        """It should Get a list of Products"""
+        self._create_products(5)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), 5)
+
+    def test_query_by_name(self):
+        """It should Query Products by name"""
+        products = self._create_products(5)
+        test_name = products[0].name
+        found = len([product for product in products if product.name == test_name])
+        response = self.client.get(
+            BASE_URL, query_string=f"name={quote_plus(test_name)}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), found)
+        # check the data just to be sure
+        for product in data:
+            self.assertEqual(product["name"], test_name)
+
+    def test_query_by_category(self):
+        """It should Query Products by category"""
+        products = self._create_products(5)
+        category = products[0].category
+        found = [product for product in products if product.category == category]
+        found_count = len(found)
+        logging.debug("Found Products [%d] %s", found_count, found)
+        response = self.client.get(BASE_URL, query_string=f"category={category.name}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), found_count)
+        for product in data:
+            self.assertEqual(product["category"], category.name)
+
+    def test_query_by_availability(self):
+        """It should Query Products by availability"""
+        products = self._create_products(5)
+        available_products = [product for product in products if product.available is True]
+        available_count = len(available_products)        
+        response = self.client.get(
+            BASE_URL, query_string="available=true"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(len(data), available_count)
+        for product in data:
+            self.assertEqual(product["available"], True)
