@@ -114,7 +114,7 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(found.price, product.price)
         self.assertEqual(found.available, product.available)
         self.assertEqual(found.category, product.category)
-    
+
     def test_update_a_product(self):
         """update a product"""
         product = ProductFactory()
@@ -159,7 +159,7 @@ class TestProductModel(unittest.TestCase):
         found = Product.find_by_name(search)
         for item in found:
             self.assertEqual(item.name, search)
-    
+
     def test_find_product_by_available(self):
         """find product by available"""
         for _ in range(10):
@@ -183,7 +183,7 @@ class TestProductModel(unittest.TestCase):
         found = Product.find_by_category(search)
         for item in found:
             self.assertEqual(item.category, search)
-        
+
     def test_invalid_id_on_update(self):
         """Test invalid id update"""
         product = ProductFactory()
@@ -204,7 +204,7 @@ class TestProductModel(unittest.TestCase):
         }
         product = Product()
         self.assertRaises(DataValidationError, product.deserialize, data)
-    
+
     def test_missing_field_deserialize(self):
         """Test deserialize() with missing field"""
         data = {
@@ -216,7 +216,7 @@ class TestProductModel(unittest.TestCase):
         }
         product = Product()
         self.assertRaises(DataValidationError, product.deserialize, data)
-    
+
     def test_deserialize_bad_data_type(self):
         """Test deserialize() with no data"""
         product = Product()
@@ -233,7 +233,7 @@ class TestProductModel(unittest.TestCase):
         }
         product = Product()
         self.assertRaises(DataValidationError, product.deserialize, data)
-    
+
     def test_find_product_by_price(self):
         """find product by price"""
         product = ProductFactory()
@@ -243,14 +243,3 @@ class TestProductModel(unittest.TestCase):
         found = Product.find_by_price("19.99")
         for item in found:
             self.assertEqual(item.price, product.price)
-    
-    
-
-        
-
-
-
-
-
-
-    
